@@ -6,9 +6,10 @@
         xmlns:local="clr-namespace:WolfInSheepsClothing"
         mc:Ignorable="d"
         Title="Wilk i Owce" Width="1600" Height="900">
-	<Grid>
-		<Canvas Name="MyCanvas" Background="LightGreen">
-		</Canvas>
-		<Button Name="StartBtn" Content="Start" HorizontalAlignment="Center" VerticalAlignment="Center" Width="75" Click="StartButton_Click"/>
-	</Grid>
+    <Grid>
+        <Canvas Name="MyCanvas" Background="LightGreen">
+        </Canvas>
+        <Button Name="StartBtn" Content="Start" HorizontalAlignment="Center" VerticalAlignment="Center" Width="75" Click="StartButton_Click"/>
+        <TextBox Name="EndText" TextWrapping="Wrap" Text="Game Over! All sheep have been caught by the wolf." Width="300" VerticalAlignment="Top" HorizontalAlignment="Center" Visibility="Collapsed" />
+    </Grid>
 </Window>
