@@ -1,12 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace WolfInSheepsClothing
 {
@@ -19,15 +17,14 @@ namespace WolfInSheepsClothing
         private readonly List<Sheep> sheeps = new();
         private Wolf? wolf;
         private Barrier? barrier;
-        private DispatcherTimer sheepTimer;
-        private DispatcherTimer wolfTimer;
+        private readonly object sheepLock = new();
+        private readonly object wolfLock = new();
 
         public MainWindow() => InitializeComponent();
 
         private void DisplayEndScreen()
         {
             MyCanvas.Children.Clear();
-
             EndText.Text = "Game Over! All sheep have been caught by the wolf.";
             EndText.Visibility = Visibility.Visible;
         }
@@ -50,39 +47,57 @@ namespace WolfInSheepsClothing
             {
                 Dispatcher.Invoke(() =>
                 {
-                    wolf.Move(sheeps);
-                    foreach (var sheep in sheeps)
+                    lock (wolfLock)
                     {
-                        sheep.Move(wolf);
+                        wolf?.Move(sheeps);
+                    }
+                    lock (sheepLock)
+                    {
+                        foreach (var sheep in sheeps)
+                        {
+                            sheep.Move(wolf);
+                        }
                     }
                 });
             });
 
-            // Setup timers
-            sheepTimer = new DispatcherTimer();
-            sheepTimer.Tick += SheepTimer_Tick;
-            sheepTimer.Interval = TimeSpan.FromMilliseconds(100);
-
-            wolfTimer = new DispatcherTimer();
-            wolfTimer.Tick += WolfTimer_Tick;
-            wolfTimer.Interval = TimeSpan.FromMilliseconds(100);
-
-            
-            sheepTimer.Start();
-            wolfTimer.Start();
-        }
-
-        private void SheepTimer_Tick(object sender, EventArgs e)
-        {
             foreach (var sheep in sheeps)
             {
-                sheep.Move(wolf);
+                Thread sheepThread = new Thread(() => SheepThreadWork(sheep));
+                sheepThread.Start();
+            }
+
+            if (wolf != null)
+            {
+                Thread wolfThread = new Thread(WolfThreadWork);
+                wolfThread.Start();
             }
         }
 
-        private void WolfTimer_Tick(object sender, EventArgs e)
+        private void SheepThreadWork(Sheep sheep)
         {
-            wolf.Move(sheeps);
+            while (true)
+            {
+                lock (sheepLock)
+                {
+                    sheep.Move(wolf);
+                }
+                barrier?.SignalAndWait();
+                Thread.Sleep(100);
+            }
+        }
+
+        private void WolfThreadWork()
+        {
+            while (true)
+            {
+                lock (wolfLock)
+                {
+                    wolf?.Move(sheeps);
+                }
+                barrier?.SignalAndWait();
+                Thread.Sleep(100);
+            }
         }
 
         public abstract class Animal
@@ -112,8 +127,11 @@ namespace WolfInSheepsClothing
 
             protected void UpdatePosition()
             {
-                Canvas.SetLeft(image, x);
-                Canvas.SetTop(image, y);
+                Dispatcher.Invoke(() =>
+                {
+                    Canvas.SetLeft(image, x);
+                    Canvas.SetTop(image, y);
+                });
             }
         }
 
@@ -168,16 +186,6 @@ namespace WolfInSheepsClothing
                 y = Math.Max(0, Math.Min((int)canvas.ActualHeight - (int)image.Height, y));
                 UpdatePosition();
             }
-
-            public static void Run(object barrierObj)
-            {
-                var barrier = (Barrier)barrierObj;
-                while (true)
-                {
-                    barrier.SignalAndWait();
-                    Thread.Sleep(100);
-                }
-            }
         }
 
         public class Wolf : Animal
@@ -190,20 +198,14 @@ namespace WolfInSheepsClothing
                 this.mainWindow = mainWindow;
             }
 
-            public void Move()
-            {
-                x += random.Next(-MoveStepWolf, MoveStepWolf);
-                y += random.Next(-MoveStepWolf, MoveStepWolf);
-                x = Math.Max(0, Math.Min((int)canvas.ActualWidth - (int)image.Width, x));
-                y = Math.Max(0, Math.Min((int)canvas.ActualHeight - (int)image.Height, y));
-                UpdatePosition();
-            }
-
             public void Move(List<Sheep> sheeps)
             {
                 if (sheeps.Count == 0)
                 {
-                    mainWindow.DisplayEndScreen();
+                    Dispatcher.Invoke(() =>
+                    {
+                        mainWindow.DisplayEndScreen();
+                    });
                     return;
                 }
 
@@ -214,7 +216,10 @@ namespace WolfInSheepsClothing
                     // Jump to the sheep and eat it
                     x = nearestSheep.x;
                     y = nearestSheep.y;
-                    canvas.Children.Remove(nearestSheep.image);
+                    Dispatcher.Invoke(() =>
+                    {
+                        canvas.Children.Remove(nearestSheep.image);
+                    });
                     sheeps.Remove(nearestSheep);
                 }
                 else
@@ -226,17 +231,6 @@ namespace WolfInSheepsClothing
                     x = Math.Max(0, Math.Min((int)canvas.ActualWidth - (int)image.Width, x));
                     y = Math.Max(0, Math.Min((int)canvas.ActualHeight - (int)image.Height, y));
                     UpdatePosition();
-                }
-            }
-
-
-            public static void Run(object barrierObj)
-            {
-                var barrier = (Barrier)barrierObj;
-                while (true)
-                {
-                    barrier.SignalAndWait();
-                    Thread.Sleep(100);
                 }
             }
         }
