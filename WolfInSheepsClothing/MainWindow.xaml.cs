@@ -11,8 +11,6 @@ namespace WolfInSheepsClothing
     public partial class MainWindow : Window
     {
         private const int NumSheep = 14;
-        private const int MoveStepSheep = 9;
-        private const int MoveStepWolf = 8;
         private readonly Random random = new();
         private readonly List<Sheep> sheeps = new();
         private Wolf? wolf;
