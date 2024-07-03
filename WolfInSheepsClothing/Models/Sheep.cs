@@ -1,5 +1,4 @@
-﻿using System;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
 namespace WolfInSheepsClothing
 {
@@ -21,9 +20,34 @@ namespace WolfInSheepsClothing
             }
             else
             {
-                // Random movement
-                x += random.Next(-MoveStepSheep, MoveStepSheep);
-                y += random.Next(-MoveStepSheep, MoveStepSheep);
+                canvas.Dispatcher.Invoke(() =>
+                {
+                    // Random movement
+                    x += random.Next(-MoveStepSheep, MoveStepSheep);
+                    y += random.Next(-MoveStepSheep, MoveStepSheep);
+
+                    // Prevent sheep from getting stuck in the corners
+                    if (x <= 0) x += MoveStepSheep;
+                    if (y <= 0) y += MoveStepSheep;
+                    if (x >= canvas.ActualWidth - image.Width) x -= MoveStepSheep;
+                    if (y >= canvas.ActualHeight - image.Height) y -= MoveStepSheep;
+
+                    x = Math.Max(0, Math.Min((int)canvas.ActualWidth - (int)image.Width, x));
+                    y = Math.Max(0, Math.Min((int)canvas.ActualHeight - (int)image.Height, y));
+                    UpdatePosition();
+                });
+            }
+        }
+
+        private void Flee(Wolf wolf)
+        {
+            int dx = x - wolf.x;
+            int dy = y - wolf.y;
+            canvas.Dispatcher.Invoke(() =>
+            {
+                // Adjust the sheep's position based on the direction to flee
+                x += dx > 0 ? MoveStepSheep : -MoveStepSheep;
+                y += dy > 0 ? MoveStepSheep : -MoveStepSheep;
 
                 // Prevent sheep from getting stuck in the corners
                 if (x <= 0) x += MoveStepSheep;
@@ -34,27 +58,7 @@ namespace WolfInSheepsClothing
                 x = Math.Max(0, Math.Min((int)canvas.ActualWidth - (int)image.Width, x));
                 y = Math.Max(0, Math.Min((int)canvas.ActualHeight - (int)image.Height, y));
                 UpdatePosition();
-            }
-        }
-
-        private void Flee(Wolf wolf)
-        {
-            int dx = x - wolf.x;
-            int dy = y - wolf.y;
-
-            // Adjust the sheep's position based on the direction to flee
-            x += dx > 0 ? MoveStepSheep : -MoveStepSheep;
-            y += dy > 0 ? MoveStepSheep : -MoveStepSheep;
-
-            // Prevent sheep from getting stuck in the corners
-            if (x <= 0) x += MoveStepSheep;
-            if (y <= 0) y += MoveStepSheep;
-            if (x >= canvas.ActualWidth - image.Width) x -= MoveStepSheep;
-            if (y >= canvas.ActualHeight - image.Height) y -= MoveStepSheep;
-
-            x = Math.Max(0, Math.Min((int)canvas.ActualWidth - (int)image.Width, x));
-            y = Math.Max(0, Math.Min((int)canvas.ActualHeight - (int)image.Height, y));
-            UpdatePosition();
+            });
         }
     }
 }

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
 namespace WolfInSheepsClothing
 {
@@ -29,7 +26,7 @@ namespace WolfInSheepsClothing
 
             var nearestSheep = sheeps.OrderBy(s => Math.Sqrt(Math.Pow(s.x - x, 2) + Math.Pow(s.y - y, 2))).First();
 
-            if (Math.Sqrt(Math.Pow(nearestSheep.x - x, 2) + Math.Pow(nearestSheep.y - y, 2)) <= 4 * MoveStepWolf)
+            if (Math.Sqrt(Math.Pow(nearestSheep.x - x, 2) + Math.Pow(nearestSheep.y - y, 2)) <= 5 * MoveStepWolf)
             {
                 // Jump to the sheep and eat it
                 x = nearestSheep.x;
@@ -42,13 +39,17 @@ namespace WolfInSheepsClothing
             }
             else
             {
-                // Move towards the nearest sheep
-                x += Math.Sign(nearestSheep.x - x) * MoveStepWolf;
-                y += Math.Sign(nearestSheep.y - y) * MoveStepWolf;
+                canvas.Dispatcher.Invoke(() =>
+                {
+                    // Move towards the nearest sheep
+                    x += Math.Sign(nearestSheep.x - x) * MoveStepWolf;
+                    y += Math.Sign(nearestSheep.y - y) * MoveStepWolf;
 
-                x = Math.Max(0, Math.Min((int)canvas.ActualWidth - (int)image.Width, x));
-                y = Math.Max(0, Math.Min((int)canvas.ActualHeight - (int)image.Height, y));
-                UpdatePosition();
+                    x = Math.Max(0, Math.Min((int)canvas.ActualWidth - (int)image.Width, x));
+                    y = Math.Max(0, Math.Min((int)canvas.ActualHeight - (int)image.Height, y));
+                    UpdatePosition();
+                });
+                
             }
         }
     }
